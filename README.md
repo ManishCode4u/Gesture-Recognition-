@@ -38,18 +38,21 @@ The web edition runs **100% in-browser** using MediaPipe WebAssembly and WebGL:
 
 ```
 gesture-recognition/
-├── index.html              # Modern Cyberpunk Web App UI
+├── index.html              # Modern Cyberpunk Web App UI (Vercel Live)
 ├── style.css               # Glassmorphism design system & neon styling
 ├── app.js                  # In-browser MediaPipe AI vision & gesture dispatcher
 ├── vercel.json             # Vercel deployment configuration & security headers
-├── ui_app.py               # CustomTkinter Dark UI desktop application
-├── desktop_automation.py   # OpenCV + PyAutoGUI desktop automation engine
-├── data-collector.py       # Landmark dataset recording utility
-├── model.py                # KNN gesture model training pipeline
-├── gesture_model.pkl       # Pre-trained machine learning model
-├── hand_landmarker.task    # Google MediaPipe hand landmark model
-├── gesture_data.csv        # Hand landmark dataset (63 features per sample)
-└── requirements.txt        # Python desktop dependencies
+├── .vercelignore           # Vercel static build optimizer
+├── README.md               # Project documentation
+└── desktop/                # Native Python Desktop Automation Suite
+    ├── ui_app.py               # CustomTkinter Dark UI desktop application
+    ├── desktop_automation.py   # OpenCV + PyAutoGUI desktop automation engine
+    ├── data-collector.py       # Landmark dataset recording utility
+    ├── model.py                # KNN gesture model training pipeline
+    ├── gesture_model.pkl       # Pre-trained machine learning model
+    ├── hand_landmarker.task    # Google MediaPipe hand landmark model
+    ├── gesture_data.csv        # Hand landmark dataset (63 features per sample)
+    └── requirements.txt        # Python desktop dependencies
 ```
 
 ---
@@ -62,7 +65,7 @@ Ensure you have Python 3.9+ installed on your system.
 ```bash
 # Clone the repository
 git clone https://github.com/ManishCode4u/Gesture-Recognition-.git
-cd Gesture-Recognition-
+cd Gesture-Recognition-/desktop
 
 # Install required packages
 pip install -r requirements.txt
@@ -89,6 +92,7 @@ Want to add your own custom gestures?
 
 1. **Collect Data**:
    ```bash
+   cd desktop
    python data-collector.py
    ```
    *Enter gesture name when prompted, press `s` to capture frames, and `q` when finished.*

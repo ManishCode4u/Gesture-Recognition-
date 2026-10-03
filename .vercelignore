@@ -1,16 +1,5 @@
-# Ignore Python desktop automation files from Vercel Serverless Function detection
-app.py
-ui_app.py
-model.py
-data-collector.py
-requirements.txt
-pyproject.toml
-uv.lock
-gesture_model.pkl
-hand_landmarker.task
-gesture_data.csv
-camera_check.txt
-run_output.txt
+# Exclude desktop python files and models from Vercel static web deployment
+desktop/
 .idea/
 .venv/
 .venv2/
