@@ -43,7 +43,7 @@ gesture-recognition/
 ├── app.js                  # In-browser MediaPipe AI vision & gesture dispatcher
 ├── vercel.json             # Vercel deployment configuration & security headers
 ├── ui_app.py               # CustomTkinter Dark UI desktop application
-├── app.py                  # OpenCV + PyAutoGUI desktop automation engine
+├── desktop_automation.py   # OpenCV + PyAutoGUI desktop automation engine
 ├── data-collector.py       # Landmark dataset recording utility
 ├── model.py                # KNN gesture model training pipeline
 ├── gesture_model.pkl       # Pre-trained machine learning model
@@ -77,7 +77,7 @@ python ui_app.py
 
 **Headless Automation Script:**
 ```bash
-python app.py
+python desktop_automation.py
 ```
 *Press `q` on the webcam window to safely exit.*
 
