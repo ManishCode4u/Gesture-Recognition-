@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gesture AI — Real-Time Hand Gesture Recognition & Automation</title>
+  <meta name="description" content="State-of-the-art real-time Hand Gesture Recognition and Human-Computer Interaction platform powered by MediaPipe and Machine Learning." />
+  <meta name="theme-color" content="#0d1117" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Gesture AI — Hand Gesture Recognition System" />
+  <meta property="og:description" content="Real-time in-browser Hand Tracking and Gesture Automation. Try live demo with Webcam!" />
+  <meta property="og:type" content="website" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- MediaPipe Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body class="dark-theme">
+  <!-- Background Glow Orbs -->
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="bg-glow-orb orb-2"></div>
+  <div class="bg-glow-orb orb-3"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="brand-icon-wrapper">
+          <i class="fa-solid fa-hand-sparkles brand-icon"></i>
+          <span class="brand-pulse"></span>
+        </div>
+        <div class="brand-text">
+          <h1>GESTURE<span class="accent-text">AI</span></h1>
+          <span class="brand-tag">VISION 2.0 • EDGE ML</span>
+        </div>
+      </div>
+
+      <div class="nav-metrics">
+        <div class="metric-pill" id="statusPill">
+          <span class="status-dot"></span>
+          <span id="statusText">System Initializing</span>
+        </div>
+        <div class="metric-pill fps-pill">
+          <i class="fa-solid fa-bolt metric-icon"></i>
+          <span id="fpsCounter">0 FPS</span>
+        </div>
+        <div class="metric-pill latency-pill">
+          <i class="fa-solid fa-wave-square metric-icon"></i>
+          <span id="latencyCounter">-- ms</span>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button class="nav-btn" id="soundToggleBtn" title="Toggle Audio FX">
+          <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+        </button>
+        <button class="nav-btn" id="simModeToggleBtn" title="Toggle Simulation / Preset Mode">
+          <i class="fa-solid fa-gamepad"></i>
+          <span>Sim Mode</span>
+        </button>
+        <button class="nav-btn primary-nav-btn" id="openSettingsBtn" title="Settings">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Controls</span>
+        </button>
+        <a href="https://github.com/ManishCode4u/Gesture-Recognition-" target="_blank" rel="noopener noreferrer" class="nav-btn github-btn" title="View Source on GitHub">
+          <i class="fa-brands fa-github"></i>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-layout">
+      <!-- Left Column: Vision Viewport & Hand Analytics -->
+      <section class="viewport-section">
+        <div class="panel-card vision-card">
+          <!-- Card Header -->
+          <div class="card-header">
+            <div class="card-title-group">
+              <i class="fa-solid fa-camera-retro card-header-icon"></i>
+              <h2>Neural Vision Stream</h2>
+            </div>
+            <div class="header-badges">
+              <span class="badge" id="cameraResolution">640x480</span>
+              <span class="badge badge-accent" id="handCountBadge">0 Hands Detected</span>
+            </div>
+          </div>
+
+          <!-- Live Video Canvas Viewport -->
+          <div class="canvas-wrapper" id="canvasContainer">
+            <!-- Cyberpunk Corner Accents -->
+            <div class="corner-accent corner-tl"></div>
+            <div class="corner-accent corner-tr"></div>
+            <div class="corner-accent corner-bl"></div>
+            <div class="corner-accent corner-br"></div>
+            
+            <!-- Scanline Overlay -->
+            <div class="scanline-overlay"></div>
+
+            <!-- Video (Hidden from direct view, rendered onto canvas) -->
+            <video id="webcam" class="hidden-video" playsinline></video>
+            
+            <!-- Main Rendering Canvas -->
+            <canvas id="output_canvas" width="640" height="480"></canvas>
+
+            <!-- Gesture Detected HUD Overlay -->
+            <div class="gesture-hud" id="gestureHud">
+              <div class="hud-icon-box" id="hudGestureIcon">✋</div>
+              <div class="hud-details">
+                <span class="hud-label">DETECTED GESTURE</span>
+                <span class="hud-gesture-name" id="hudGestureName">NONE</span>
+                <div class="confidence-bar-wrapper">
+                  <div class="confidence-bar-fill" id="hudConfidenceBar" style="width: 0%"></div>
+                </div>
+                <span class="hud-confidence-val" id="hudConfidenceVal">0%</span>
+              </div>
+            </div>
+
+            <!-- Cooldown Timer Indicator Ring -->
+            <div class="cooldown-badge" id="cooldownBadge" title="Action Cooldown">
+              <div class="cooldown-spinner" id="cooldownSpinner"></div>
+              <span id="cooldownLabel">READY</span>
+            </div>
+
+            <!-- Action Toast / Flash Notification -->
+            <div class="action-alert" id="actionAlert">
+              <i class="fa-solid fa-bolt-lightning alert-icon"></i>
+              <span id="actionAlertText">Action Triggered!</span>
+            </div>
+
+            <!-- Camera Placeholder / Permission Prompt -->
+            <div class="camera-fallback" id="cameraFallback">
+              <div class="fallback-content">
+                <div class="fallback-icon-pulse">
+                  <i class="fa-solid fa-video-slash"></i>
+                </div>
+                <h3>Webcam Vision Inactive</h3>
+                <p>Allow camera access to test real-time gesture recognition right on your device, or switch to Preset Simulation mode.</p>
+                <div class="fallback-buttons">
+                  <button class="btn btn-primary" id="startCameraBtn">
+                    <i class="fa-solid fa-camera"></i> Start WebCam
+                  </button>
+                  <button class="btn btn-outline" id="startSimPresetBtn">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Try Preset Gestures
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Viewport Controls Bar -->
+          <div class="viewport-toolbar">
+            <button class="tool-btn active" id="toggleCamBtn" title="Toggle Camera">
+              <i class="fa-solid fa-video"></i>
+              <span>Camera</span>
+            </button>
+            <button class="tool-btn active" id="mirrorCamBtn" title="Mirror Camera Feed">
+              <i class="fa-solid fa-arrows-left-right"></i>
+              <span>Mirror</span>
+            </button>
+            <button class="tool-btn active" id="drawLandmarksBtn" title="Show Landmark Skeleton">
+              <i class="fa-solid fa-bezier-curve"></i>
+              <span>Skeleton</span>
+            </button>
+            <button class="tool-btn" id="captureSnapshotBtn" title="Take Screenshot (or make Screenshot gesture)">
+              <i class="fa-solid fa-camera"></i>
+              <span>Capture (📸)</span>
+            </button>
+            <button class="tool-btn" id="resetTrackerBtn" title="Reset Vision Pipeline">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+          <!-- 5-Finger State Matrix -->
+          <div class="finger-matrix">
+            <div class="finger-item" id="fingerThumb">
+              <span class="finger-name">Thumb</span>
+              <span class="finger-status">FOLDED</span>
+              <div class="finger-dot"></div>
+            </div>
+            <div class="finger-item" id="fingerIndex">
+              <span class="finger-name">Index</span>
+              <span class="finger-status">FOLDED</span>
+              <div class="finger-dot"></div>
+            </div>
+            <div class="finger-item" id="fingerMiddle">
+              <span class="finger-name">Middle</span>
+              <span class="finger-status">FOLDED</span>
+              <div class="finger-dot"></div>
+            </div>
+            <div class="finger-item" id="fingerRing">
+              <span class="finger-name">Ring</span>
+              <span class="finger-status">FOLDED</span>
+              <div class="finger-dot"></div>
+            </div>
+            <div class="finger-item" id="fingerPinky">
+              <span class="finger-name">Pinky</span>
+              <span class="finger-status">FOLDED</span>
+              <div class="finger-dot"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gesture Quick Reference Card -->
+        <div class="panel-card gesture-matrix-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <i class="fa-solid fa-wand-magic-sparkles card-header-icon"></i>
+              <h3>Gesture Automation Mappings</h3>
+            </div>
+          </div>
+          <div class="gesture-grid">
+            <div class="gesture-pill" data-gesture="palm" id="pill-palm">
+              <span class="g-icon">🖐</span>
+              <div class="g-info">
+                <span class="g-name">Palm Open</span>
+                <span class="g-action">Play / Pause Media</span>
+              </div>
+            </div>
+            <div class="gesture-pill" data-gesture="index" id="pill-index">
+              <span class="g-icon">☝</span>
+              <div class="g-info">
+                <span class="g-name">Index Point</span>
+                <span class="g-action">Mute / Unmute Sound</span>
+              </div>
+            </div>
+            <div class="gesture-pill" data-gesture="right slide" id="pill-right slide">
+              <span class="g-icon">👉</span>
+              <div class="g-info">
+                <span class="g-name">Right Slide</span>
+                <span class="g-action">Scroll Feed Down</span>
+              </div>
+            </div>
+            <div class="gesture-pill" data-gesture="left slide" id="pill-left slide">
+              <span class="g-icon">👈</span>
+              <div class="g-info">
+                <span class="g-name">Left Slide</span>
+                <span class="g-action">Scroll Feed Up</span>
+              </div>
+            </div>
+            <div class="gesture-pill" data-gesture="screenshot" id="pill-screenshot">
+              <span class="g-icon">📸</span>
+              <div class="g-info">
+                <span class="g-name">Pinch / Snapshot</span>
+                <span class="g-action">Take Screenshot</span>
+              </div>
+            </div>
+            <div class="gesture-pill" data-gesture="thumb_up" id="pill-thumb_up">
+              <span class="g-icon">👍</span>
+              <div class="g-info">
+                <span class="g-name">Thumbs Up</span>
+                <span class="g-action">Approve & Confetti</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Interactive Demo Center & Analytics -->
+      <section class="action-section">
+        <!-- Interactive Tabs -->
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="studio">
+            <i class="fa-solid fa-gamepad"></i> Interactive Studio
+          </button>
+          <button class="tab-btn" data-tab="inspector">
+            <i class="fa-solid fa-chart-line"></i> AI & 3D Inspector
+          </button>
+          <button class="tab-btn" data-tab="desktop">
+            <i class="fa-solid fa-terminal"></i> Python OS Automation
+          </button>
+        </div>
+
+        <!-- Tab 1: Interactive Studio -->
+        <div class="tab-content active" id="tab-studio">
+          <!-- Media Player Demo Component -->
+          <div class="panel-card media-player-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-music card-header-icon"></i>
+                <h3>Gesture-Driven Media Player</h3>
+              </div>
+              <span class="badge" id="playerStatusBadge">Paused</span>
+            </div>
+
+            <div class="media-player-body">
+              <div class="player-visualizer-box">
+                <canvas id="audioVisualizerCanvas" width="400" height="100"></canvas>
+                <div class="track-details">
+                  <span class="track-title">Cyberpunk Synth Wave — Horizon 2077</span>
+                  <span class="track-artist">Gesture AI Interactive Synthesizer</span>
+                </div>
+              </div>
+
+              <div class="player-controls">
+                <div class="progress-bar-container">
+                  <div class="progress-fill" id="trackProgress"></div>
+                </div>
+                <div class="controls-row">
+                  <button class="player-btn" id="prevTrackBtn" title="Previous Track"><i class="fa-solid fa-backward-step"></i></button>
+                  <button class="player-btn primary-player-btn" id="playPauseBtn" title="Play/Pause (🖐 Gesture)"><i class="fa-solid fa-play" id="playPauseIcon"></i></button>
+                  <button class="player-btn" id="nextTrackBtn" title="Next Track"><i class="fa-solid fa-forward-step"></i></button>
+                  <button class="player-btn" id="muteBtn" title="Mute/Unmute (☝ Gesture)"><i class="fa-solid fa-volume-high" id="muteBtnIcon"></i></button>
+                  <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" />
+                </div>
+              </div>
+              <div class="player-hint">
+                <span>💡 Show <strong>🖐 Palm</strong> to Play/Pause &bull; Point <strong>☝ Index</strong> to Toggle Mute</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Feed Scroller Demo Component -->
+          <div class="panel-card feed-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-layer-group card-header-icon"></i>
+                <h3>Gesture-Controlled Feed (👉 / 👈)</h3>
+              </div>
+              <span class="badge badge-accent">Swipe Down/Up</span>
+            </div>
+
+            <div class="feed-scroll-container" id="feedScrollContainer">
+              <div class="feed-item active-feed-item">
+                <div class="feed-icon"><i class="fa-solid fa-microchip"></i></div>
+                <div class="feed-content">
+                  <h4>Edge AI Computer Vision</h4>
+                  <p>Running directly in the browser via WebAssembly with zero backend latency.</p>
+                </div>
+              </div>
+              <div class="feed-item">
+                <div class="feed-icon"><i class="fa-solid fa-hand"></i></div>
+                <div class="feed-content">
+                  <h4>21 3D Coordinate Landmarks</h4>
+                  <p>Tracks wrist, PIP, MCP, DIP, and fingertip positions in real-time 3D space.</p>
+                </div>
+              </div>
+              <div class="feed-item">
+                <div class="feed-icon"><i class="fa-solid fa-keyboard"></i></div>
+                <div class="feed-content">
+                  <h4>Native OS Automation</h4>
+                  <p>PyAutoGUI bindings for system volume, keyboard, scrolling, and window management.</p>
+                </div>
+              </div>
+              <div class="feed-item">
+                <div class="feed-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <div class="feed-content">
+                  <h4>Instant Vercel Deployment</h4>
+                  <p>Seamlessly hostable on Vercel with responsive dark-mode styling and camera API support.</p>
+                </div>
+              </div>
+              <div class="feed-item">
+                <div class="feed-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="feed-content">
+                  <h4>100% Privacy First</h4>
+                  <p>No video or webcam data ever leaves your device. Everything is processed locally.</p>
+                </div>
+              </div>
+            </div>
+            <div class="feed-footer-hint">
+              <span>Swipe <strong>👉 Right</strong> to Scroll Down &bull; Swipe <strong>👈 Left</strong> to Scroll Up</span>
+            </div>
+          </div>
+
+          <!-- Live Snapshot Reel Component -->
+          <div class="panel-card snapshot-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-images card-header-icon"></i>
+                <h3>Live Snapshot Reel (📸)</h3>
+              </div>
+              <span class="badge" id="snapshotCountBadge">0 Captures</span>
+            </div>
+            <div class="snapshot-reel" id="snapshotReel">
+              <div class="snapshot-empty-state" id="snapshotEmptyState">
+                <i class="fa-solid fa-camera-retro"></i>
+                <p>Make a <strong>📸 Pinch / Snapshot</strong> gesture or click Capture to snap a frame!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: AI & 3D Inspector -->
+        <div class="tab-content" id="tab-inspector">
+          <div class="panel-card metrics-summary-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-brain card-header-icon"></i>
+                <h3>Model & Pipeline Architecture</h3>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-box">
+                <span class="stat-label">Model Engine</span>
+                <span class="stat-val">MediaPipe Hands</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Classifier</span>
+                <span class="stat-val">KNN (k=5) + Kinematics</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Feature Dim</span>
+                <span class="stat-val">63 Float32 Vectors</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">Accuracy Score</span>
+                <span class="stat-val accent-val">98.8%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card landmark-table-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-table-cells card-header-icon"></i>
+                <h3>Landmark Coordinates (21 Joints)</h3>
+              </div>
+            </div>
+            <div class="table-scroll-wrap">
+              <table class="landmark-table" id="landmarkTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Joint Name</th>
+                    <th>X (Norm)</th>
+                    <th>Y (Norm)</th>
+                    <th>Z (Depth)</th>
+                  </tr>
+                </thead>
+                <tbody id="landmarkTableBody">
+                  <!-- Dynamically populated -->
+                  <tr><td colspan="5" class="empty-table-msg">No hand detected in current frame</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel-card log-stream-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-terminal card-header-icon"></i>
+                <h3>Live Event Stream</h3>
+              </div>
+              <button class="btn-text" id="clearLogsBtn"><i class="fa-solid fa-trash"></i> Clear</button>
+            </div>
+            <div class="log-console" id="logConsole">
+              <div class="log-entry log-info">
+                <span class="log-time">[00:00:00]</span>
+                <span class="log-msg">System initialized. Neural pipeline ready.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Python Desktop Automation Guide -->
+        <div class="tab-content" id="tab-desktop">
+          <div class="panel-card python-guide-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-brands fa-python card-header-icon"></i>
+                <h3>Python Native OS Automation Setup</h3>
+              </div>
+              <span class="badge badge-accent">Local Desktop</span>
+            </div>
+
+            <div class="guide-body">
+              <p>For system-wide PC control (controlling Spotify, YouTube, Windows volume, taking global screenshots), run the included Python app locally on your machine.</p>
+
+              <div class="code-step">
+                <div class="step-header">
+                  <span class="step-num">1</span>
+                  <h4>Clone Repository & Install Dependencies</h4>
+                </div>
+                <div class="code-block">
+                  <pre><code>git clone https://github.com/ManishCode4u/Gesture-Recognition-.git
+cd Gesture-Recognition-
+pip install -r requirements.txt</code></pre>
+                  <button class="copy-code-btn" data-clipboard="git clone https://github.com/ManishCode4u/Gesture-Recognition-.git`ncd Gesture-Recognition-`npip install -r requirements.txt"><i class="fa-regular fa-copy"></i></button>
+                </div>
+              </div>
+
+              <div class="code-step">
+                <div class="step-header">
+                  <span class="step-num">2</span>
+                  <h4>Run Desktop UI Application</h4>
+                </div>
+                <div class="code-block">
+                  <pre><code>python ui_app.py</code></pre>
+                  <button class="copy-code-btn" data-clipboard="python ui_app.py"><i class="fa-regular fa-copy"></i></button>
+                </div>
+              </div>
+
+              <div class="code-step">
+                <div class="step-header">
+                  <span class="step-num">3</span>
+                  <h4>Train Custom Gestures (Optional)</h4>
+                </div>
+                <div class="code-block">
+                  <pre><code># Collect new gesture samples
+python data-collector.py
+
+# Train and save the KNN model
+python model.py</code></pre>
+                  <button class="copy-code-btn" data-clipboard="python data-collector.py`npython model.py"><i class="fa-regular fa-copy"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span>© 2026 <strong>Gesture AI</strong> &bull; Developed by <a href="https://github.com/ManishCode4u" target="_blank">Manish Kumar</a></span>
+      </div>
+      <div class="footer-center">
+        <span class="pulse-indicator"></span> Real-Time In-Browser Edge AI Machine Learning
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/ManishCode4u/Gesture-Recognition-" target="_blank"><i class="fa-brands fa-github"></i> Repository</a>
+        <a href="#tab-desktop" id="footerDocsLink"><i class="fa-solid fa-book"></i> Documentation</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-sliders"></i>
+          <h3>Control & Vision Settings</h3>
+        </div>
+        <button class="close-modal-btn" id="closeSettingsBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <label for="confidenceThreshold">Min Detection Confidence</label>
+            <span class="setting-val" id="confidenceValLabel">60%</span>
+          </div>
+          <input type="range" class="styled-range" id="confidenceThreshold" min="30" max="95" value="60" />
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <label for="cooldownDuration">Action Cooldown (Seconds)</label>
+            <span class="setting-val" id="cooldownValLabel">1.0s</span>
+          </div>
+          <input type="range" class="styled-range" id="cooldownDuration" min="3" max="30" value="10" />
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <label for="soundVolume">Audio FX Volume</label>
+            <span class="setting-val" id="soundVolumeValLabel">50%</span>
+          </div>
+          <input type="range" class="styled-range" id="soundVolume" min="0" max="100" value="50" />
+        </div>
+
+        <div class="setting-item">
+          <label>Simulation Preset Gestures</label>
+          <div class="sim-presets-grid">
+            <button class="btn btn-preset" data-sim="palm">🖐 Palm</button>
+            <button class="btn btn-preset" data-sim="index">☝ Index</button>
+            <button class="btn btn-preset" data-sim="right slide">👉 Right Slide</button>
+            <button class="btn btn-preset" data-sim="left slide">👈 Left Slide</button>
+            <button class="btn btn-preset" data-sim="screenshot">📸 Snapshot</button>
+            <button class="btn btn-preset" data-sim="thumb_up">👍 Thumbs Up</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="saveSettingsBtn">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snapshot Full Preview Modal -->
+  <div class="modal-backdrop" id="snapshotModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-camera"></i>
+          <h3>Captured Snapshot</h3>
+        </div>
+        <button class="close-modal-btn" id="closeSnapshotBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body snapshot-modal-body">
+        <img id="modalSnapshotImg" src="" alt="Captured Gesture Snapshot" />
+      </div>
+      <div class="modal-footer">
+        <a id="downloadSnapshotLink" class="btn btn-primary" download="gesture_snapshot.png">
+          <i class="fa-solid fa-download"></i> Download PNG
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
